@@ -34,8 +34,8 @@ for punkt in koordynaty:
 
 #słownik - dict
 osoba = {"imie": "Jan",            # "imie", "nazwisko", "wiek" to są klucze słownika
-         "nazwisko": "kowalski",   #"Jan", "Kowalski", "30" to są wartości w słowniku
-         "wiek": 30}
+        "nazwisko": "kowalski",   #"Jan", "Kowalski", "30" to są wartości w słowniku
+        "wiek": 30}
 print(osoba)
 print(osoba["nazwisko"])
 #pętla po kluczach - domyśłna pętla w słowniku
