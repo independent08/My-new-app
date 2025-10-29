@@ -40,7 +40,7 @@ with tab2:
     # --- Wyświetlanie tabeli
     st.subheader("Przefiltrowane dane")
     st.dataframe(filtered_df)
-   # --- Podstawowa statystyka
+    # --- Podstawowa statystyka
     avg_tip = round(filtered_df['tip'].mean(), 2)
     sum_tip = round(filtered_df['tip'].sum(), 2)
     max_tip = round(filtered_df['tip'].max(), 2)
