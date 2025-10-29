@@ -1,0 +1,1 @@
+Twoja pierwsza aplikacja w streamlit.
