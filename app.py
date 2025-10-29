@@ -5,6 +5,7 @@ with st.sidebar:
     st.header('Panel boczny') #dodanie panelu bocznego
     st.code('fragment kodu')
     st.selectbox('Wybierz opcję', options=["Opcja1", "Opcja 2", "Opcja 3"])
+    st.logo("https://media2.dev.to/dynamic/image/width=1280,height=720,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2F6mk8aoa97px9xhi723o1.jpg", size="large")
 st.title("Moja apka")
 tab1, tab2 = st.tabs(["Opisy", "Dane"])
 
