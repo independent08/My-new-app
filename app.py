@@ -1,6 +1,10 @@
 import streamlit as st ## low-code web app framework
 import pandas as pd  ##pandas to najpopularniejsza biblioteka do manipulacji i analizy danych
 
+with st.sidebar:
+    st.header('Panel boczny') #dodanie panelu bocznego
+    st.code('fragment kodu')
+    st.selectbox('Wybierz opcję', options=["Opcja1", "Opcja 2", "Opcja 3"])
 st.title("Moja apka")
 tab1, tab2 = st.tabs(["Opisy", "Dane"])
 
