@@ -11,7 +11,7 @@ def dodaj(): ## stworzenie funkcji
         wynik = a + b
         st.success(f"Wynik: {wynik}")
 
-dodaj()
+
 st.divider()   
 birthday = st.date_input("Kiedy masz urodziny?", value = None)
 st.write("Masz urodziny dnia:", birthday)
