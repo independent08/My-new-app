@@ -5,8 +5,8 @@ st.title("Moja pierwsza aplikacja w Streamlit")
 st.write(1+1)
 
 def dodaj(): ## stworzenie funkcji
-    a = st.number_input("podaj liczbę a")
-    b = st.number_input("podaj liczbę b")
+    a = st.number_input("podaj liczbę a", key="liczbaa")
+    b = st.number_input("podaj liczbę b", key="liczbab")
     if st.button("Dodaj"):
         wynik = a + b
         st.success(f"Wynik: {wynik}")
