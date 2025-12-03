@@ -3,7 +3,8 @@ import streamlit as st
 pages = {
     "Moja aplikacja": [
         st.Page("app.py", title="Strona główna"),
-        st.Page("regression.py", title="Ceny mieszkań")
+        st.Page("regression.py", title="Trening"),
+        st.Page("machine_learning_.py", title= "Predykcja cen mieszkań")
     ],
     "Moduły": [
         st.Page("utilities.py", title="Utilities")
