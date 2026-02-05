@@ -4,11 +4,16 @@ import plotly.express as px
 from pmdarima import auto_arima
 import plotly.graph_objects as go
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from statsmodels.tsa.exponential_smoothing.ets import ETSModel
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
 
+def mape(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
-Arima, HoltWinters, RandomForest = st.tabs(["Arima", "Holt-Winters", "Random-Forest"])
+
+Arima, HoltWinters, ETS = st.tabs(["Arima", "Holt-Winters", "ETS"])
 
 with Arima:
     uploaded_file = st.file_uploader("Wrzuć CSV z danymi", type= "csv")
@@ -39,7 +44,8 @@ with Arima:
                 
                 mae = mean_absolute_error(last8[city], forecast)
                 rmse = np.sqrt(mean_squared_error(last8[city], forecast))
-                results.append({"Miasto": city, "MAE": round(mae,2), "RMSE": round(rmse,2)})
+                mape_val = mape(last8[city], forecast)
+                results.append({"Miasto": city, "MAE": round(mae,2), "RMSE": round(rmse,2), "MAPE": round(mape_val,2)})
 
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=last8.index, y=last8[city],
@@ -173,7 +179,8 @@ with HoltWinters:
                 # Obliczamy MAE i RMSE wyłącznie na danych historycznych
                 mae = mean_absolute_error(series_test, forecast_hist)
                 rmse = np.sqrt(mean_squared_error(series_test, forecast_hist))
-                results.append({"Miasto": city, "MAE": round(mae,2), "RMSE": round(rmse,2)})
+                mape_val = mape(series_test, forecast_hist)
+                results.append({"Miasto": city, "MAE": round(mae,2), "RMSE": round(rmse,2), "MAPE": round(mape_val, 2)})
 
                 # Etykiety kwartalne dla osi X
                 x_test = [f"{int(t)}Q{int(round((t-int(t))*4)+1)}" for t in series_test.index]
@@ -221,3 +228,147 @@ with HoltWinters:
 
             for city in ["Kraków", "Warszawa", "Wrocław"]:
                 fit_hw(city)
+
+with ETS:
+    uploaded_file = st.file_uploader("Wrzuć CSV z danymi", type= "csv", key="ets")
+    if uploaded_file is not None:
+        df_ets = pd.read_csv(uploaded_file, sep=",")
+        
+        df_ets["Rok"] = df_ets["Kwartał"].str.split().str[1].astype("int") #zmieniam stringi kolumny "rok" na wartość numeryczną
+        mapowanie_kwartalu = {"I": 1, "II": 2, "III": 3, "IV": 4}
+        df_ets["Kwartał"] = (df_ets["Kwartał"].str.replace("\xa0", "", regex=False).str.split().str[0].map(mapowanie_kwartalu))
+
+        for city in ["Kraków", "Warszawa", "Wrocław"]:
+            df_ets[city] = df_ets[city].astype(str).str.replace("\xa0", "").astype(int)
+        
+        df_ets["t"] = df_ets["Rok"] + (df_ets["Kwartał"] - 1) / 4
+        df_ets = df_ets.sort_values("t").set_index("t")
+        
+        with st.expander(":violet[Precyzyjność modelu ETS (MAE / RMSE / MAPE) – ostatnie 8 kwartałów historycznych]"):
+
+            test_periods = 8
+            test_start = 2023.5   # III 2023
+            test_end = 2025.25    # II 2025
+
+            results = []
+
+            for city in ["Kraków", "Warszawa", "Wrocław"]:
+                series = df_ets[city].dropna()
+
+                series_test = series[
+                    (series.index >= test_start) & (series.index <= test_end)
+                ]
+
+                if len(series_test) != test_periods:
+                    st.warning(f"{city}: brak pełnych 8 kwartałów – pomijam")
+                    continue
+
+                train = series[series.index <= test_end]
+
+                model = ETSModel(
+                    series,
+                    error="add",
+                    trend="add",
+                    seasonal="add",
+                    seasonal_periods=8
+                ).fit()
+
+
+                forecast_hist = model.forecast(test_periods)
+
+                mae = mean_absolute_error(series_test, forecast_hist)
+                rmse = np.sqrt(mean_squared_error(series_test, forecast_hist))
+                mape_val = mape(series_test, forecast_hist)
+
+                results.append({
+                    "Miasto": city,
+                    "MAE": round(mae, 2),
+                    "RMSE": round(rmse, 2),
+                    "MAPE": round(mape_val, 2)
+                })
+
+                x_test = [
+                    f"{int(t)}Q{int(round((t - int(t)) * 4) + 1)}"
+                    for t in series_test.index
+                ]
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=x_test,
+                    y=series_test,
+                    mode="lines+markers",
+                    name="Historyczne"
+                ))
+                fig.add_trace(go.Scatter(
+                    x=x_test,
+                    y=forecast_hist,
+                    mode="lines+markers",
+                    name="Prognoza ETS"
+                ))
+
+                fig.update_layout(
+                    title=f"{city} – ETS (ostatnie 8 kwartałów historycznych)",
+                    xaxis_title="Kwartał",
+                    yaxis_title="Cena"
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+            st.subheader("Błędy prognozy na danych historycznych")
+            st.dataframe(pd.DataFrame(results))
+        with st.expander("Model ETS - prognoza cen"):
+            st.subheader("ETS - prognoza (trend + sezonowość + błąd)")
+
+            def fit_ets(city):
+                st.write(f"### {city}")
+
+                series = df_ets[city]
+
+                model = ETSModel(
+                    series,
+                    error="add",
+                    trend="add",
+                    seasonal="add",
+                    seasonal_periods=8
+                ).fit()
+
+                forecast_periods = 8
+                forecast = model.forecast(forecast_periods)
+
+                future_t = [
+                    series.index.max() + i * 0.25
+                    for i in range(1, forecast_periods + 1)
+                ]
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=series.index,
+                    y=series,
+                    mode="lines",
+                    name="Historyczne"
+                ))
+                fig.add_trace(go.Scatter(
+                    x=future_t,
+                    y=forecast,
+                    mode="lines",
+                    name="Prognoza"
+                ))
+
+                fig.update_layout(
+                    title=f"Prognoza cen mieszkań – {city} (ETS)",
+                    xaxis_title="Rok",
+                    yaxis_title="Cena"
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+                df_forecast = pd.DataFrame({
+                    "Rok": future_t,
+                    f"{city}_forecast": forecast
+                })
+
+                st.write("Prognoza")
+                st.dataframe(df_forecast)
+
+            for city in ["Kraków", "Warszawa", "Wrocław"]:
+                fit_ets(city)
